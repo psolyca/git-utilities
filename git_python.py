@@ -35,7 +35,7 @@ def stash():
                           stderr=subprocess.STDOUT, stdout=subprocess.PIPE) 
    rc = proc.wait()
    if rc != 0:
-      print proc.stdout
+      print proc.stdout.read()
       print "git stash: unable to stash local modifications"
       return -1
    return 0
@@ -45,7 +45,7 @@ def stash_pop():
                           stderr=subprocess.STDOUT, stdout=subprocess.PIPE) 
    rc = proc.wait()
    if rc != 0:
-      print proc.stdout
+      print proc.stdout.read()
       print "git stash pop: unable to pop stash"
       return -1
    return 0
@@ -56,7 +56,7 @@ def svn_rebase():
                           stderr=subprocess.STDOUT, stdout=subprocess.PIPE) 
    rc = proc.wait()
    if rc != 0:
-      print proc.stdout
+      print proc.stdout.read()
       print "svn rebase: execute 'git rebase --continue|--abort', then exit shell to continue the svn rebase process"
       subprocess.call(['$SHELL'], shell=True)
    return 0
@@ -70,7 +70,7 @@ def rebase(base, branch, flags=[]):
    proc = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE) 
    rc = proc.wait()
    if rc != 0:
-      print proc.stdout
+      print proc.stdout.read()
       print "git rebase: execute 'git rebase --continue|--abort', then exit shell to continue the git rebase process"
       subprocess.call(['$SHELL'], shell=True)
    return 0
