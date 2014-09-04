@@ -42,6 +42,7 @@ def merge_base_from_commits_list( l1, l2 ):
          return i-1, last #index and hash
       last= c1
       i+=1
+   return i-1, last
 
 def commit_author_date( commit ):
    return subprocess.check_output(["git", "log", "-1", '--format=%ad', commit] )
