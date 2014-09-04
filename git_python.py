@@ -58,20 +58,16 @@ def commits_between( old_branch, new_branch, rev= False ):
    return result
  
 def rebase(base, branch, onto=None, flags=[]):
-   args = ['git', 'rebase']
-   if onto:
-      args+= ['--onto', onto]
-   args += flags
-   args.append(base)
-   args.append(branch)
-
+   args = ['git', 'rebase'] + (['--onto', onto] if onto else[]) + flags + [base, branch]
    proc = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE) 
-   rc = proc.wait()
-   if rc != 0:
+   if proc.wait() != 0:
       print proc.stdout.read()
       print "git rebase: execute 'git rebase --continue|--abort', then exit shell to continue the git rebase process"
-      subprocess.call(['$SHELL'], shell=True)
-   return 0
+      print "exit with non-zero status to abort rebase"
+      try:
+         subprocess.check_call(['$SHELL'], shell=True)
+      except subprocess.CalledProcessError:
+         raise Exception("Rebase interrupted")
 
 def create_branch(branchname):
    subprocess.check_call(['git', 'branch', branchname])
