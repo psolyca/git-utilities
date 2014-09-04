@@ -83,4 +83,10 @@ def delete_branch(branchname, force=False):
 def rename_branch(branch, newbranch):
    subprocess.check_call(['git', 'branch', "-m", branch, newbranch])
  
-
+def get_branches():
+   out= subprocess.check_output(["git", "branch"] )
+   out=out.splitlines()
+   assert all(x[:2] in ("  ","* ") for x in out)
+   out= [x[2:] for x in out]
+   assert all(x[0]!=" " for x in out)
+   return out

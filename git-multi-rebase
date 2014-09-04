@@ -65,6 +65,8 @@ for b in branches:
    print 'rebasing ' + b
    rb= rebased_branch( b )
    checkout( b )
+   if rb in get_branches():
+      delete_branch(rb, force=True) #delete branches leftover from previous multi-rebase
    create_branch( rb )
    checkout( rb )
    rebased_branches= list(rebased_commits_from_fork.keys())
