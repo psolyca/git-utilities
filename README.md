@@ -1,6 +1,7 @@
-git-utilities
-================
+*Forked from https://github.com/goncalopp/git-utilities and converted to Python 3*
 
+git-utilities
+=============
 
 [git-multi-rebase]
 
