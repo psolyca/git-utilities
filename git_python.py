@@ -2,12 +2,19 @@
 
 import os, sys, subprocess
 
+def s(bytesOrString):
+   if type(bytesOrString) is bytes:
+      return bytesOrString.decode("utf-8")
+   else:
+      assert type(bytesOrString) is str
+      return bytesOrString
+
 def cur_branch():
    # get the current branch
    proc = subprocess.Popen(['git', 'symbolic-ref', '-q', 'HEAD'],
                            stdout=subprocess.PIPE)
    proc.wait()
-   current_branch = proc.stdout.read().split('/')[2].strip()
+   current_branch = s(proc.stdout.read()).split('/')[2].strip()
    
    return current_branch
 
@@ -15,7 +22,7 @@ def cur_branch():
 def is_dirty():
    proc = subprocess.Popen(['git', 'diff', '--shortstat'], 
                            stdout=subprocess.PIPE)
-   if proc.stdout.read().strip() != "":
+   if s(proc.stdout.read().strip()) != "":
       return True
    else:
       return False
@@ -45,11 +52,16 @@ def merge_base_from_commits_list( l1, l2 ):
    return i-1, last
 
 def commit_author_date( commit ):
+   commit = s(commit)
    return subprocess.check_output(["git", "log", "-1", '--format=%ad', commit] )
    
 def commits_between( old_branch, new_branch, rev= False ):
    '''returns the hashes of the commits between two branches,
    ordered from new to old (unless rev)'''
+
+   new_branch = s(new_branch)
+   old_branch = s(old_branch)
+
    result = subprocess.check_output(['git', 'log', '--format=%H', old_branch+"^.."+new_branch]) 
    result= result.splitlines()
    assert all([len(x)==40 for x in result]) #SHA1 hash size
@@ -58,12 +70,15 @@ def commits_between( old_branch, new_branch, rev= False ):
    return result
  
 def rebase(base, branch, onto=None, flags=[]):
+   base   = s(base)
+   branch = s(branch)
+
    args = ['git', 'rebase'] + (['--onto', onto] if onto else[]) + flags + [base, branch]
    proc = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE) 
    if proc.wait() != 0:
-      print proc.stdout.read()
-      print "git rebase: execute 'git rebase --continue|--abort', then exit shell to continue the git rebase process"
-      print "exit with non-zero status to abort rebase"
+      print(proc.stdout.read())
+      print("git rebase: execute 'git rebase --continue|--abort', then exit shell to continue the git rebase process")
+      print("exit with non-zero status to abort rebase")
       try:
          subprocess.check_call(['$SHELL'], shell=True)
       except subprocess.CalledProcessError:
@@ -82,7 +97,7 @@ def rename_branch(branch, newbranch):
 def get_branches():
    out= subprocess.check_output(["git", "branch"] )
    out=out.splitlines()
-   assert all(x[:2] in ("  ","* ") for x in out)
+   assert all(s(x[:2]) in ("  ","* ") for x in out)
    out= [x[2:] for x in out]
    assert all(x[0]!=" " for x in out)
    return out
