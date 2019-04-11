@@ -4,7 +4,7 @@ import os, sys, subprocess
 from git_python import *
 
 def usage():
-   print "Usage: git-multi-rebase [options] <newbase> <branch0> [<branch1> ... <branchN>]"
+   print("Usage: git-multi-rebase [options] <newbase> <branch0> [<branch1> ... <branchN>]")
 
 if len(sys.argv) < 3:
    usage()
@@ -62,7 +62,7 @@ def commits_similar( c1, c2 ):
    return d1==d2
    
 for b in branches:
-   print 'rebasing ' + b
+   print('rebasing ' + b)
    rb= rebased_branch( b )
    checkout( b )
    if rb in get_branches():
@@ -83,7 +83,7 @@ for b in branches:
 
       old_graft_point= latest_merge_base[1]
       new_graft_point= rebased_branch(branch_with_latest_merge_base)+"~"+str(latest_merge_base_index_from_tip)
-      print old_graft_point, new_graft_point
+      print(old_graft_point, new_graft_point)
       assert commits_similar(old_graft_point, new_graft_point)
       rebase(old_graft_point, rb, onto=new_graft_point, flags=flags)
       assert commits_similar(b, rb)
@@ -95,6 +95,3 @@ for b in branches:
 
 # checkout previous branch
 checkout(current_branch)
-
-
-
