@@ -61,9 +61,9 @@ def rebase(base, branch, onto=None, flags=[]):
    args = ['git', 'rebase'] + (['--onto', onto] if onto else[]) + flags + [base, branch]
    proc = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE) 
    if proc.wait() != 0:
-      print proc.stdout.read()
-      print "git rebase: execute 'git rebase --continue|--abort', then exit shell to continue the git rebase process"
-      print "exit with non-zero status to abort rebase"
+      print(proc.stdout.read())
+      print("git rebase: execute 'git rebase --continue|--abort', then exit shell to continue the git rebase process")
+      print("exit with non-zero status to abort rebase")
       try:
          subprocess.check_call(['$SHELL'], shell=True)
       except subprocess.CalledProcessError:

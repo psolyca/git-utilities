@@ -4,7 +4,7 @@ import os, sys, subprocess
 from git_python import *
 
 def usage():
-   print "Usage: git-multi-rebase [options] <newbase> <branch0> [<branch1> ... <branchN>]"
+   print("Usage: git-multi-rebase [options] <newbase> <branch0> [<branch1> ... <branchN>]")
 
 if len(sys.argv) < 3:
    usage()
@@ -15,6 +15,7 @@ flags = ['--quiet']
 flag_cnt = 1
 branches = []
 branch_cnt = 0
+common_branch = ""
 
 for i in range (1, len(sys.argv)):
    arg = sys.argv[i].strip()
@@ -38,7 +39,6 @@ if not branches:
    usage()
    sys.exit("no branches specified");
 
-
 assert not is_dirty()
 
 # get the current branch
@@ -46,8 +46,25 @@ current_branch = cur_branch()
 
 #commit where our branches forked from upstream
 fork_point= merge_base( [upstream]+branches )
+print("fork_point : " + str(fork_point))
+
+# If one branch is given, list all children
+# Rebase the common_branch last
+if branch_cnt == 1:
+    if fork_point == subprocess.check_output(["git", "rev-parse", branches[0]]).splitlines()[0]:
+        # Checkout 1rst branch
+        checkout(branches[0])
+        common_branch = branches[0]
+        lb = subprocess.check_output(["git", "branch", "--contains", "HEAD"])
+        lb = lb.replace(b' ', b'').replace(b'*', b'').splitlines()
+        if len(lb) > 1:
+            branches = [b for b in lb if b not in [upstream, common_branch]]
+            #branches.append(common_branch)
+print("branches : " + str(branches))
+
 #commits on each branch since the fork point
 commits_from_fork= {b: commits_between( fork_point, b, rev=True) for b in branches}
+#print("commits_from_fork : " + str(commits_from_fork))
 #commits on each rebased branch since the fork point
 rebased_commits_from_fork= {}
 
@@ -62,39 +79,60 @@ def commits_similar( c1, c2 ):
    return d1==d2
    
 for b in branches:
-   print 'rebasing ' + b
+   print('rebasing ' + b)
    rb= rebased_branch( b )
+   # Go to branch to rebase
    checkout( b )
    if rb in get_branches():
       delete_branch(rb, force=True) #delete branches leftover from previous multi-rebase
+   # Create rebase branch
    create_branch( rb )
    checkout( rb )
    rebased_branches= list(rebased_commits_from_fork.keys())
+   #print("rebased_branches : " + str(rebased_branches))
+
    if not rebased_branches:
       #first branch is rebased normally
       rebase( upstream, rb )
    else:
       #subsequent branches check for merge bases with all already-rebased branches
       merge_bases= [merge_base_from_commits_list(commits_from_fork[b], commits_from_fork[x]) for x in rebased_branches] #indexes of merge bases between the current branch we're rebasing and every other branch
+      #print("merge_bases : " + str(merge_bases))
       latest_merge_base= max(merge_bases)
+      #print("latest_merge_base : " + str(latest_merge_base))
       branch_with_latest_merge_base= rebased_branches[merge_bases.index(latest_merge_base)]
+      #print("branch_with_latest_merge_base : " + str(branch_with_latest_merge_base))
       
       latest_merge_base_index_from_tip= len(commits_from_fork[branch_with_latest_merge_base])-latest_merge_base[0]-1
+      #print("latest_merge_base_index_from_tip : " + str(latest_merge_base_index_from_tip))
 
       old_graft_point= latest_merge_base[1]
       new_graft_point= rebased_branch(branch_with_latest_merge_base)+"~"+str(latest_merge_base_index_from_tip)
-      print old_graft_point, new_graft_point
-      assert commits_similar(old_graft_point, new_graft_point)
+      print(old_graft_point, new_graft_point)
+      try:
+         assert commits_similar(old_graft_point, new_graft_point)
+      except AssertionError as e:
+         if fork_point != old_graft_point:
+            raise AssertionError
       rebase(old_graft_point, rb, onto=new_graft_point, flags=flags)
       assert commits_similar(b, rb)
    rebased_commits_from_fork[b]= commits_between( fork_point, rb, rev=True )
+   #print("rebased_commits_from_fork[b] : " + str(rebased_commits_from_fork[b]))
+
+if common_branch:
+   rb= rebased_branch( common_branch )
+   checkout( common_branch )
+   create_branch( rb )
+   checkout( rb )
+   rebase(upstream, rb)
 
 for b in branches:
    delete_branch(b, force=True)
    rename_branch( rebased_branch(b), b )
 
+if common_branch:
+    delete_branch( common_branch , force=True)
+    rename_branch( rebased_branch(common_branch), common_branch )
+
 # checkout previous branch
 checkout(current_branch)
-
-
-
